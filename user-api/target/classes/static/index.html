@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Users Management</title>
+    <style>
+        /* Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #141414;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            font-size: 3rem;
+            color: #e50914;
+            margin-top: 20px;
+        }
+        .navbar {
+            display: flex;
+            justify-content: center;
+            background-color: #333;
+            padding: 10px;
+        }
+        .navbar button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .navbar button:hover {
+            background-color: #e50914;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            display: none; /* Hidden by default */
+        }
+        table, th, td {
+            width: 100%;
+            border: 1px solid #555;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            color: #e50914;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #444;
+            color: #fff;
+            font-size: 1rem;
+        }
+        input:focus, button:focus {
+            outline: none;
+            border-color: #e50914;
+        }
+        .alert {
+            color: #fff;
+            background-color: #b20710;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+    <script>
+        // Function to display specific container
+        function showSection(sectionId) {
+            // Hide all containers
+            document.querySelectorAll('.container').forEach(container => {
+                container.style.display = 'none';
+            });
+            // Show the selected container
+            document.getElementById(sectionId).style.display = 'block';
+        }
+
+        function viewUsers() {
+            fetch('http://localhost:8080/user-api/api/users', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => response.json())
+                .then(users => {
+                    const resultDiv = document.getElementById("all-users-result");
+                    if (users.length > 0) {
+                        let tableHTML = `<table><tr><th>ID</th><th>First Name</th><th>Last Name</th><th>Email</th></tr>`;
+                        users.forEach(user => {
+                            tableHTML += `
+                        <tr>
+                            <td>${user.id}</td>
+                            <td>${user.fname}</td>
+                            <td>${user.lname}</td>
+                            <td>${user.email}</td>
+                        </tr>`;
+                        });
+                        tableHTML += `</table>`;  // This was missing in the original code
+                        resultDiv.innerHTML = tableHTML; // Correct way to insert the table into the HTML
+                    } else {
+                        resultDiv.innerHTML = `<p>No users found.</p>`;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function createUser() {
+            const fname = document.getElementById("fname").value;
+            const lname = document.getElementById("lname").value;
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const userData = {fname, lname, email, password};
+
+            fetch('http://localhost:8080/user-api/api/new_users', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(userData)
+            })
+                .then(response => response.json())
+                .then(data => showAlert("User added successfully!"))
+                .catch(error => showAlert("Error adding user"));
+        }
+
+
+        function updateUser() {
+            const id = document.getElementById("update-id").value;
+            const fname = document.getElementById("update-fname").value;
+            const lname = document.getElementById("update-lname").value;
+            const email = document.getElementById("update-email").value;
+            const userData = {fname, lname, email};
+
+            fetch(`http://localhost:8080/user-api/api/complete_update_users/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(userData)
+            })
+                .then(response => response.json())
+                .then(data => showAlert("User updated successfully!"))
+                .catch(error => showAlert("Error updating user"));
+        }
+
+        function deleteUser() {
+            const id = document.getElementById("delete-id").value;
+
+            fetch(`http://localhost:8080/user-api/api/delete_users/${id}`, {method: 'DELETE'})
+                .then(() => showAlert("User deleted successfully!"))
+                .catch(error => showAlert("Error deleting user"));
+        }
+
+        function viewUserById() {
+            const id = document.getElementById("view-id").value;
+
+            fetch(`http://localhost:8080/user-api/api/users/${id}`, {
+                method: 'GET',
+                headers: {'Content-Type': 'application/json'}
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("view-result").innerHTML = `
+                        <p><strong>ID:</strong> ${data.id}</p>
+                        <p><strong>First Name:</strong> ${data.fname}</p>
+                        <p><strong>Last Name:</strong> ${data.lname}</p>
+                        <p><strong>Email:</strong> ${data.email}</p>`;
+                })
+                .catch(error => showAlert("User not found"));
+        }
+
+        function showAlert(message) {
+            const alertBox = document.getElementById("alert");
+            alertBox.innerText = message;
+            alertBox.style.display = 'block';
+            setTimeout(() => alertBox.style.display = 'none', 3000);
+        }
+    </script>
+</head>
+<body>
+<h1>Netflix Users Management</h1>
+<div id="alert" class="alert" style="display: none;"></div>
+
+<!-- Navigation buttons -->
+<div class="navbar">
+    <button onclick="showSection('view-users')">View All Users</button>
+    <button onclick="showSection('create-user')">Create User</button>
+    <button onclick="showSection('update-user')">Update User</button>
+    <button onclick="showSection('delete-user')">Delete User</button>
+    <button onclick="showSection('view-user-by-id')">View User by ID</button>
+</div>
+
+<!-- Containers for each action -->
+<div id="view-users" class="container">
+    <h2>All Users</h2>
+    <button onclick="viewUsers()">Load Users</button>
+    <div id="all-users-result"></div>
+</div>
+
+<div id="create-user" class="container">
+    <h2>Create User</h2>
+    <form onsubmit="event.preventDefault(); createUser();">
+        <input type="text" id="fname" placeholder="First Name" required>
+        <input type="text" id="lname" placeholder="Last Name" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button type="submit">Create User</button>
+    </form>
+</div>
+
+<div id="update-user" class="container">
+    <h2>Update User</h2>
+    <form onsubmit="event.preventDefault(); updateUser();">
+        <input type="number" id="update-id" placeholder="User ID" required>
+        <input type="text" id="update-fname" placeholder="First Name" required>
+        <input type="text" id="update-lname" placeholder="Last Name" required>
+        <input type="email" id="update-email" placeholder="Email" required>
+        <button type="submit">Update User</button>
+    </form>
+</div>
+
+<div id="delete-user" class="container">
+    <h2>Delete User</h2>
+    <form onsubmit="event.preventDefault(); deleteUser();">
+        <input type="number" id="delete-id" placeholder="User ID" required>
+        <button type="submit">Delete User</button>
+    </form>
+</div>
+
+<div id="view-user-by-id" class="container">
+    <h2>View User by ID</h2>
+    <form onsubmit="event.preventDefault(); viewUserById();">
+        <input type="number" id="view-id" placeholder="User ID" required>
+        <button type="submit">View User</button>
+    </form>
+    <div id="view-result"></div>
+</div>
+</body>
+</html>
